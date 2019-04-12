@@ -39,6 +39,15 @@ function initiate(playlistId, apiKey) {
     });
 }
 
+function getPlaylistId(url) {
+    let utilityString = "&list=";
+    let playlistUrl = url;
+    let playlistId = playlistUrl.split(utilityString)
+        .pop()
+        .split("&")
+        .shift();
+}
+
 function loadScript() {
     //manifest.json Google API Library load fix:
     //https://stackoverflow.com/q/18681803
@@ -56,13 +65,7 @@ window.onload = function () {
         function (request, sender, sendResponse) {
             console.log(sender.tab ? "a message from content script, from URL " + sender.tab.url : "wtf :/");
 
-            let utilityString = "&list=";
-            let playlistUrl = sender.tab.url;
-            let playlistId = playlistUrl.split(utilityString)
-                .pop()
-                .split("&")
-                .shift();
-
+            let playlistId = getPlaylistId(sender.tab.url);
             let apiKey = request.apiKey;
 
             gapi.load("client", {
