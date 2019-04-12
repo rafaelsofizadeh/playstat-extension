@@ -8,7 +8,7 @@ function playlistUrlMatch() {
 }
 
 function sendMessage() {
-    chrome.runtime.sendMessage({}, function (response) {
+    chrome.runtime.sendMessage({ apiKey: apiKey }, function (response) {
         console.log(response);
     });
 }

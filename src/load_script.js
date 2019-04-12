@@ -63,6 +63,8 @@ window.onload = function () {
                 .split("&")
                 .shift();
 
+            let apiKey = request.apiKey;
+
             gapi.load("client", {
                 callback: function () {
                     initiate(playlistId, apiKey);
