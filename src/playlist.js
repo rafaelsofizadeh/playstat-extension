@@ -7,17 +7,23 @@ function playlistUrlMatch() {
     return false;
 }
 
-function sendMessage() {
-    chrome.runtime.sendMessage({ apiKey: apiKey }, function (response) {
+function sendMessage(message, callback) {
+    chrome.runtime.sendMessage(message, function (response) {
         console.log(response);
+        callback();
     });
 }
 
-function messageControl() {
+function updatePlaylist() {
     if (playlistUrlMatch()) {
-        sendMessage();
+        sendMessage({ purpose: "update" });
     }
 }
 
-sendMessage();
-window.addEventListener("yt-navigate-start", messageControl);
+function connectToBackground() {
+    //By default (manifesto matches) fires when match is detected, so no need for playlistUrlMatch()
+    sendMessage({ purpose: "connect", apiKey: apiKey }, updatePlaylist);
+}
+
+connectToBackground();
+window.addEventListener("yt-navigate-start", updatePlaylist);
