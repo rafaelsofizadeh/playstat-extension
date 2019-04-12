@@ -42,6 +42,12 @@ function initiate(playlistId, apiKey) {
         getPlaylistItems(playlistItemsArray, settings).then(getVideoIds(playlistItemsArray));
     });
 }
+*/
+
+function handleUpdate(url) {
+    let playlistId = getPlaylistId(url);
+
+}
 
 function getPlaylistId(url) {
     let utilityString = "&list=";
@@ -53,20 +59,8 @@ function getPlaylistId(url) {
 
     return playlistId;
 }
-*/
-function loadScript() {
-    //manifest.json Google API Library load fix:
-    //https://stackoverflow.com/q/18681803
-    let head = document.getElementsByTagName("head")[0];
-    let script = document.createElement("script");
-    script.src = "api.js";
-    script.type = "text/javascript";
-    head.appendChild(script);
-}
 
-function handleUpdate() {
-    console.log("update requested");
-}
+//---------------------------------------------------------
 
 function handleConnection(apiKey) {
     return gapi.load("client", {
@@ -87,6 +81,18 @@ function loadClient(apiKey) {
         .catch(function (err) {
             console.error("Error loading GAPI client for API", err);
         });
+}
+
+//---------------------------------------------------------
+
+function loadScript() {
+    //manifest.json Google API Library load fix:
+    //https://stackoverflow.com/q/18681803
+    let head = document.getElementsByTagName("head")[0];
+    let script = document.createElement("script");
+    script.src = "api.js";
+    script.type = "text/javascript";
+    head.appendChild(script);
 }
 
 window.onload = function () {

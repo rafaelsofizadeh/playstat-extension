@@ -10,7 +10,9 @@ function playlistUrlMatch() {
 function sendMessage(message, callback) {
     chrome.runtime.sendMessage(message, function (response) {
         console.log(response);
-        callback();
+        if (callback !== undefined) {
+            callback();
+        }
     });
 }
 
