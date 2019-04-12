@@ -17,6 +17,7 @@ function sendMessage(message, callback) {
 }
 
 function updatePlaylist() {
+    console.log("STARTED??????", Date.now());
     if (playlistUrlMatch()) {
         sendMessage({ purpose: "update" });
     }

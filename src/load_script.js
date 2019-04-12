@@ -1,25 +1,4 @@
 /*
-function loadPlaylistItems(settings) {
-    return gapi.client.youtube.playlistItems.list(settings);
-}
-
-async function getPlaylistItems(settings) {
-    let playlistItems = []
-    let response = (await loadPlaylistItems(settings));
-    let nextPageToken = response.nextPageToken;
-
-    while (nextPageToken !== undefined) {
-        playlistItems.push(...response.items);
-        settings.pageToken = nextPageToken;
-
-        response = (await loadPlaylistItems(settings));
-        nextPageToken = response.nextPageToken;
-    }
-
-    console.log(playlistItems);
-    return playlistItems;
-}
-
 function getVideoIds(playlistItemsArray) {
     let videoIdsArray = playlistItemsArray.map(item => {
         return item.contentDetails.videoId;
@@ -28,25 +7,18 @@ function getVideoIds(playlistItemsArray) {
     console.log("video ids: ", videoIdsArray);
     return videoIdsArray;
 }
+*/
 
-function initiate(playlistId, apiKey) {
+async function handleUpdate(url) {
+    console.log("should be later");
+    let playlistId = getPlaylistId(url);
     let settings = {
         "part": "contentDetails",
         "maxResults": 50,
         "playlistId": playlistId
     };
 
-    let playlistItemsArray = [];
-
-    loadClient(apiKey).then(function () {
-        getPlaylistItems(playlistItemsArray, settings).then(getVideoIds(playlistItemsArray));
-    });
-}
-*/
-
-function handleUpdate(url) {
-    let playlistId = getPlaylistId(url);
-
+    let playlistItems = await getPlaylistItems(settings);
 }
 
 function getPlaylistId(url) {
@@ -60,27 +32,32 @@ function getPlaylistId(url) {
     return playlistId;
 }
 
+function loadPlaylistItems(settings) {
+    return gapi.client.youtube.playlistItems.list(settings);
+}
+
+async function getPlaylistItems(settings) {
+    let playlistItems = []
+    let response = await loadPlaylistItems(settings);
+    let nextPageToken = response.nextPageToken;
+
+    while (nextPageToken !== undefined) {
+        playlistItems.push(...response.items);
+        settings.pageToken = nextPageToken;
+
+        response = await loadPlaylistItems(settings);
+        nextPageToken = response.nextPageToken;
+    }
+
+    return playlistItems;
+}
+
 //---------------------------------------------------------
 
 function handleConnection(apiKey) {
-    return gapi.load("client", {
-        callback: function () {
-            loadClient(apiKey);
-            console.log("connection requested");
-        }
-    });
-
-}
-
-function loadClient(apiKey) {
+    gapi.load("client")
     gapi.client.setApiKey(apiKey);
-    return gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest")
-        .then(function () {
-            console.log("GAPI client loaded for API");
-        })
-        .catch(function (err) {
-            console.error("Error loading GAPI client for API", err);
-        });
+    return gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest");
 }
 
 //---------------------------------------------------------
@@ -90,14 +67,13 @@ function loadScript() {
     //https://stackoverflow.com/q/18681803
     let head = document.getElementsByTagName("head")[0];
     let script = document.createElement("script");
-    script.src = "api.js";
+    script.src = "api1.js";
     script.type = "text/javascript";
+    script.onload = setMessageListener;
     head.appendChild(script);
 }
 
-window.onload = function () {
-    loadScript();
-
+function setMessageListener() {
     chrome.runtime.onMessage.addListener(
         //Handling promises inside if/else
         //https://stackoverflow.com/a/47083894
@@ -106,11 +82,16 @@ window.onload = function () {
                 await handleUpdate(sender.tab.url);
                 sendResponse("response to client | update");
             } else if (request.purpose === "connect") {
-                await handleConnection(request.apiKey);
-                sendResponse("response to client | connect");
+                handleConnection(request.apiKey)
+                    .then(function () {
+                        console.log("should be earlier");
+                        sendResponse("response to client | connect")
+                    }, function () {
+                        console.log("shit's wrong mane");
+                    });
             }
-
-            //let playlistId = getPlaylistId(sender.tab.url);
         }
     );
 }
+
+loadScript();
