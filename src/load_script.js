@@ -9,8 +9,7 @@ function getVideoIds(playlistItemsArray) {
 }
 */
 
-async function handleUpdate(url) {
-    console.log("should be later");
+function handleUpdate(url) {
     let playlistId = getPlaylistId(url);
     let settings = {
         "part": "contentDetails",
@@ -18,7 +17,10 @@ async function handleUpdate(url) {
         "playlistId": playlistId
     };
 
-    let playlistItems = await getPlaylistItems(settings);
+    return new Promise(function (resolve, reject) {
+        let playlist = getPlaylistItems(settings);
+        resolve(playlist);
+    });
 }
 
 function getPlaylistId(url) {
@@ -39,6 +41,7 @@ function loadPlaylistItems(settings) {
 async function getPlaylistItems(settings) {
     let playlistItems = []
     let response = await loadPlaylistItems(settings);
+    console.log(response);
     let nextPageToken = response.nextPageToken;
 
     while (nextPageToken !== undefined) {
@@ -77,19 +80,23 @@ function setMessageListener() {
     chrome.runtime.onMessage.addListener(
         //Handling promises inside if/else
         //https://stackoverflow.com/a/47083894
-        async function (request, sender, sendResponse) {
+
+        //sendResponse in async function
+        //https://stackoverflow.com/a/20077854
+        function (request, sender, sendResponse) {
             if (request.purpose === "update") {
-                await handleUpdate(sender.tab.url);
-                sendResponse("response to client | update");
+                handleUpdate(sender.tab.url)
+                    .then(function (playlist) {
+                        sendResponse(playlist);
+                    });
             } else if (request.purpose === "connect") {
                 handleConnection(request.apiKey)
                     .then(function () {
-                        console.log("should be earlier");
                         sendResponse("response to client | connect")
-                    }, function () {
-                        console.log("shit's wrong mane");
                     });
             }
+
+            return true;
         }
     );
 }
