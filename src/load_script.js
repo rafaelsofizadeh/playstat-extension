@@ -1,27 +1,28 @@
-/*
-function getVideoIds(playlistItemsArray) {
-    let videoIdsArray = playlistItemsArray.map(item => {
-        return item.contentDetails.videoId;
-    });
-
-    console.log("video ids: ", videoIdsArray);
-    return videoIdsArray;
-}
-*/
+//---------------------------------------------------------
+// Getting any results related to playlists
 
 function handleUpdate(url) {
     let playlistId = getPlaylistId(url);
     let settings = {
-        "part": "contentDetails",
-        "maxResults": 50,
-        "playlistId": playlistId
+        playlistItems: {
+            "part": "contentDetails",
+            "maxResults": 50,
+            "playlistId": playlistId
+        },
+        videos: {
+            "part": "contentDetails"
+        }
     };
 
     return new Promise(function (resolve, reject) {
-        let playlist = getPlaylistItems(settings);
-        resolve(playlist);
-    });
+        let videoDetails = getVideoDetails(settings);
+        resolve(videoDetails);
+    })
 }
+
+//---------------------------------------------------------
+// Getting playlistItem results
+//---------------------------------------------------------
 
 function getPlaylistId(url) {
     let utilityString = "&list=";
@@ -34,19 +35,19 @@ function getPlaylistId(url) {
     return playlistId;
 }
 
-function loadPlaylistItems(settings) {
-    return gapi.client.youtube.playlistItems.list(settings);
+function loadPlaylistItems(playlistItemsSettings) {
+    return gapi.client.youtube.playlistItems.list(playlistItemsSettings);
 }
 
-async function getPlaylistItems(settings) {
+async function getPlaylistItems(playlistItemsSettings) {
     let playlistItems = []
-    let response = await loadPlaylistItems(settings);
+    let response = await loadPlaylistItems(playlistItemsSettings);
     let nextPageToken = response.nextPageToken;
     playlistItems.push(...response.result.items);
 
     while (nextPageToken !== undefined) {
-        settings.pageToken = nextPageToken;
-        response = await loadPlaylistItems(settings);
+        playlistItemsSettings.pageToken = nextPageToken;
+        response = await loadPlaylistItems(playlistItemsSettings);
         playlistItems.push(...response.result.items);
 
         nextPageToken = response.nextPageToken;
@@ -56,6 +57,41 @@ async function getPlaylistItems(settings) {
 }
 
 //---------------------------------------------------------
+// Getting video results from playlistItems
+//---------------------------------------------------------
+
+function getVideoIds(playlistItems) {
+    let videoIdsArray = playlistItems.map(item => {
+        return item.contentDetails.videoId;
+    });
+
+    return videoIdsArray;
+}
+
+function arrayToList(array) {
+    return array.join();
+}
+
+function prepareVideosSettings(videosSettings, playlistItems) {
+    let videoIdsArray = getVideoIds(playlistItems);
+    let videoList = arrayToList(videoIdsArray);
+
+    videosSettings.id = videoList;
+
+    return videosSettings;
+}
+
+async function getVideoDetails(settings) {
+    let playlistItems = await getPlaylistItems(settings.playlistItems);
+
+    videosSettings = prepareVideosSettings(settings.videos, playlistItems);
+    let videoDetails = await gapi.client.youtube.videos.list(videosSettings);
+
+    return videoDetails;
+}
+
+//---------------------------------------------------------
+// Establishing connection
 
 function handleConnection(apiKey) {
     gapi.load("client")
@@ -64,6 +100,7 @@ function handleConnection(apiKey) {
 }
 
 //---------------------------------------------------------
+// Starter code
 
 function loadScript() {
     //manifest.json Google API Library load fix:
@@ -83,8 +120,8 @@ function setMessageListener() {
         function (request, sender, sendResponse) {
             if (request.purpose === "update") {
                 handleUpdate(sender.tab.url)
-                    .then(function (playlist) {
-                        sendResponse(playlist);
+                    .then(function (videoDetails) {
+                        sendResponse(videoDetails);
                     });
             } else if (request.purpose === "connect") {
                 handleConnection(request.apiKey)
