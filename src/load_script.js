@@ -41,14 +41,14 @@ function loadPlaylistItems(settings) {
 async function getPlaylistItems(settings) {
     let playlistItems = []
     let response = await loadPlaylistItems(settings);
-    console.log(response);
     let nextPageToken = response.nextPageToken;
+    playlistItems.push(...response.result.items);
 
     while (nextPageToken !== undefined) {
-        playlistItems.push(...response.items);
         settings.pageToken = nextPageToken;
-
         response = await loadPlaylistItems(settings);
+        playlistItems.push(...response.result.items);
+
         nextPageToken = response.nextPageToken;
     }
 
@@ -80,9 +80,6 @@ function setMessageListener() {
     chrome.runtime.onMessage.addListener(
         //Handling promises inside if/else
         //https://stackoverflow.com/a/47083894
-
-        //sendResponse in async function
-        //https://stackoverflow.com/a/20077854
         function (request, sender, sendResponse) {
             if (request.purpose === "update") {
                 handleUpdate(sender.tab.url)
@@ -96,6 +93,8 @@ function setMessageListener() {
                     });
             }
 
+            //sendResponse in async function
+            //https://stackoverflow.com/a/20077854
             return true;
         }
     );
