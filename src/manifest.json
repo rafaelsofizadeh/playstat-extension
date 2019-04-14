@@ -14,7 +14,7 @@
     ],
     "background": {
         "scripts": [
-            "load_script.js"
+            "background.js"
         ]
     },
     "content_scripts": [
