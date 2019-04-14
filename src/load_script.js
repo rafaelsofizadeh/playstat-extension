@@ -15,12 +15,12 @@ function handleUpdate(url) {
     };
 
     return new Promise(function (resolve, reject) {
-        getVideoDetails(settings)
-            .then(function (videoDetails) {
-                let playlistDuration = getPlaylistDuration(videoDetails);
+        getVideoItemsDetails(settings)
+            .then(function (videoItemsDetails) {
+                let playlistDuration = getPlaylistDuration(videoItemsDetails);
                 resolve(playlistDuration);
             });
-    })
+    });
 }
 
 //---------------------------------------------------------
@@ -45,11 +45,11 @@ function loadPlaylistItems(playlistItemsSettings) {
 async function getPlaylistItems(playlistItemsSettings) {
     let playlistItems = []
     let response = await loadPlaylistItems(playlistItemsSettings);
-    let nextPageToken = response.nextPageToken;
+    let nextPageToken = response.result.nextPageToken;
     playlistItems.push(...response.result.items);
 
     while (nextPageToken !== undefined) {
-        playlistItemsSettings.pageToken = nextPageToken;
+        playlistItemsSettings["pageToken"] = nextPageToken;
         response = await loadPlaylistItems(playlistItemsSettings);
         playlistItems.push(...response.result.items);
 
@@ -84,13 +84,18 @@ function prepareVideosSettings(videosSettings, playlistItems) {
     return videosSettings;
 }
 
-async function getVideoDetails(settings) {
+async function getVideoItemsDetails(settings) {
     let playlistItems = await getPlaylistItems(settings.playlistItems);
+    let videoItemsDetails = [];
 
-    videosSettings = prepareVideosSettings(settings.videos, playlistItems);
-    let videoDetails = await gapi.client.youtube.videos.list(videosSettings);
+    for (let i = 0; i < playlistItems.length / 50; i++) {
+        let playlistItemsBatch = playlistItems.slice(i * 50, (i + 1) * 50);
+        let videosSettings = prepareVideosSettings(settings.videos, playlistItemsBatch);
+        let videoResponse = await gapi.client.youtube.videos.list(videosSettings);
+        videoItemsDetails.push(...videoResponse.result.items);
+    }
 
-    return videoDetails;
+    return videoItemsDetails;
 }
 
 //---------------------------------------------------------
@@ -108,15 +113,16 @@ function parseDuration(iso8601Duration) {
     };
 }
 
-function getPlaylistDuration(videoDetails) {
-    let durationTotalInSeconds = videoDetails.result.items
+function getPlaylistDuration(videoItemsDetails) {
+    console.log("videoItemsDetails: ", videoItemsDetails);
+    let durationTotalInSeconds = videoItemsDetails
         .map(videoItem => parseDuration(videoItem.contentDetails.duration))
         .reduce((totalDuration, videoItemDuration) => {
+            console.log("totalDuration: " + totalDuration, "videoItemDuration: ", videoItemDuration);
             totalDuration += videoItemDuration.hours * 3600
                 + videoItemDuration.minutes * 60
                 + videoItemDuration.seconds;
 
-            console.log(totalDuration, videoItemDuration);
             return totalDuration;
         }, 0);
 
