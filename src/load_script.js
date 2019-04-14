@@ -168,12 +168,18 @@ function setMessageListener() {
             if (request.purpose === "update") {
                 handleUpdate(sender.tab.url)
                     .then(function (playlistDuration) {
-                        sendResponse(playlistDuration);
+                        sendResponse({
+                            purpose: "update",
+                            result: playlistDuration
+                        });
                     });
             } else if (request.purpose === "connect") {
                 handleConnection(request.apiKey)
                     .then(function () {
-                        sendResponse("response to client | connect")
+                        sendResponse({
+                            purpose: "connect",
+                            result: "successfully connected!"
+                        });
                     });
             }
 

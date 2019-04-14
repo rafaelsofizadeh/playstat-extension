@@ -1,3 +1,30 @@
+//---------------------------------------------------------
+// Use results to update DOM
+
+function getElementByXPath(xpath) {
+    return new XPathEvaluator()
+        .createExpression(xpath)
+        .evaluate(document, XPathResult.FIRST_ORDERED_NODE_TYPE)
+        .singleNodeValue;
+}
+
+function insertPlaylistDuration(duration) {
+    let destination = getElementByXPath("//*[@id=\"publisher-container\"]");
+    let durationString = duration.hours + "h. "
+        + duration.minutes + "min. "
+        + duration.seconds + "s. ";
+
+    let durationElement = document.createElement("div");
+    durationElement.className = "index-message-wrapper style-scope ytd-playlist-panel-renderer";
+    durationElement.style.marginLeft = "auto";
+    durationElement.innerHTML = durationString;
+
+    destination.appendChild(durationElement);
+}
+
+//---------------------------------------------------------
+// Connection and navigation update
+
 function playlistUrlMatch() {
     let url = window.location.href;
     if (url.indexOf("youtube") !== -1 && url.indexOf("&list=") !== -1) {
@@ -9,6 +36,15 @@ function playlistUrlMatch() {
 
 function sendMessage(message, callback) {
     chrome.runtime.sendMessage(message, function (response) {
+        if (response.purpose === "update") {
+            insertPlaylistDuration(response.result);
+            console.log(response);
+        }
+
+        if (response.purpose === "connect") {
+            console.log(response.result);
+        }
+
         if (callback !== undefined) {
             callback();
         }
@@ -26,5 +62,7 @@ function connectToBackground() {
     sendMessage({ purpose: "connect", apiKey: apiKey }, updatePlaylist);
 }
 
-connectToBackground();
-window.addEventListener("yt-navigate-start", updatePlaylist);
+window.onload = function () {
+    connectToBackground();
+    window.addEventListener("yt-navigate-start", updatePlaylist);
+}
