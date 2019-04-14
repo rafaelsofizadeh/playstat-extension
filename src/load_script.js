@@ -15,8 +15,11 @@ function handleUpdate(url) {
     };
 
     return new Promise(function (resolve, reject) {
-        let videoDetails = getVideoDetails(settings);
-        resolve(videoDetails);
+        getVideoDetails(settings)
+            .then(function (videoDetails) {
+                let playlistDuration = getPlaylistDuration(videoDetails);
+                resolve(playlistDuration);
+            });
     })
 }
 
@@ -91,6 +94,44 @@ async function getVideoDetails(settings) {
 }
 
 //---------------------------------------------------------
+// Using video results
+//---------------------------------------------------------
+
+function parseDuration(iso8601Duration) {
+    let iso8601DurationRegex = /PT(?:([.,\d]+)H)?(?:([.,\d]+)M)?(?:([.,\d]+)S)?/;
+    let matches = iso8601Duration.match(iso8601DurationRegex);
+
+    return {
+        hours: matches[1] === undefined ? 0 : parseInt(matches[1]),
+        minutes: matches[2] === undefined ? 0 : parseInt(matches[2]),
+        seconds: matches[3] === undefined ? 0 : parseInt(matches[3])
+    };
+}
+
+function getPlaylistDuration(videoDetails) {
+    let durationTotalInSeconds = videoDetails.result.items
+        .map(videoItem => parseDuration(videoItem.contentDetails.duration))
+        .reduce((totalDuration, videoItemDuration) => {
+            totalDuration += videoItemDuration.hours * 3600
+                + videoItemDuration.minutes * 60
+                + videoItemDuration.seconds;
+
+            console.log(totalDuration, videoItemDuration);
+            return totalDuration;
+        }, 0);
+
+    let durationHours = Math.floor(durationTotalInSeconds / 3600);
+    let durationMinutes = Math.floor((durationTotalInSeconds - durationHours * 3600) / 60);
+    let durationSeconds = durationTotalInSeconds - durationHours * 3600 - durationMinutes * 60;
+
+    return {
+        hours: durationHours,
+        minutes: durationMinutes,
+        seconds: durationSeconds
+    };
+}
+
+//---------------------------------------------------------
 // Establishing connection
 
 function handleConnection(apiKey) {
@@ -120,8 +161,8 @@ function setMessageListener() {
         function (request, sender, sendResponse) {
             if (request.purpose === "update") {
                 handleUpdate(sender.tab.url)
-                    .then(function (videoDetails) {
-                        sendResponse(videoDetails);
+                    .then(function (playlistDuration) {
+                        sendResponse(playlistDuration);
                     });
             } else if (request.purpose === "connect") {
                 handleConnection(request.apiKey)
