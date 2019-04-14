@@ -1,0 +1,34 @@
+{
+    "manifest_version": 2,
+    "name": "PlayStats",
+    "description": "Youtube Playlist statistics",
+    "version": "0.1",
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "storage",
+        "*://*.google.com/*",
+        "*://*.googleapis.com/*",
+        "*://*.youtube.com/watch?v=*&list=*",
+        "*://*.youtube.com/playlist?list=*"
+    ],
+    "background": {
+        "scripts": [
+            "load_script.js"
+        ]
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://*.youtube.com/watch?v=*&list=*",
+                "*://*.youtube.com/playlist?list=*"
+            ],
+            "run_at": "document_end",
+            "js": [
+                "sensitive.js",
+                "playlist.js"
+            ]
+        }
+    ],
+    "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'"
+}
